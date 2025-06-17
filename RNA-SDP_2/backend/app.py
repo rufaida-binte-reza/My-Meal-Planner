@@ -16,7 +16,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='123',
+        password='',
         database='mymealplanner'
     )
 
@@ -142,12 +142,12 @@ def api_by_ingredient():
         if ingredients:
             placeholders = ', '.join(['%s'] * len(ingredients))
             query = f'''
-                SELECT m.*
+                SELECT m.meal_id, m.meal_name, m.tags, m.calories, m.image_url
                 FROM Meals m
                 JOIN Meal_Ingredients mi ON m.meal_id = mi.meal_id
                 JOIN Ingredients i ON mi.ingredient_id = i.ingredient_id
                 WHERE i.ingredient_name IN ({placeholders})
-                GROUP BY m.meal_id
+                GROUP BY m.meal_id, m.meal_name, m.tags, m.calories, m.image_url
                 HAVING COUNT(DISTINCT i.ingredient_name) = %s;
             '''
             conn = get_db_connection()
@@ -164,13 +164,18 @@ def api_by_ingredient():
         if 'conn' in locals():
             conn.close()
 
+
 @app.route('/api/by_preference', methods=['POST'])
 def api_by_preference():
     try:
         preference = request.json.get('preference', '').strip().lower()
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT m.* FROM Meals m WHERE LOWER(CONCAT(',', m.tags, ',')) LIKE %s"
+        query = '''
+            SELECT m.meal_id, m.meal_name, m.tags, m.calories, m.image_url
+            FROM Meals m
+            WHERE LOWER(CONCAT(',', m.tags, ',')) LIKE %s
+        '''
         cursor.execute(query, ("%,{}%,".format(preference),))
         meals = cursor.fetchall()
         return jsonify(meals)
@@ -182,6 +187,7 @@ def api_by_preference():
             cursor.close()
         if 'conn' in locals():
             conn.close()
+
 
 @app.route('/api/all_meals', methods=['GET'])
 def api_all_meals():
