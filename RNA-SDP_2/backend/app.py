@@ -16,8 +16,8 @@ def get_db_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
-        password='',
-        database='mymealplanner'
+        password='123',
+        database='my_meal_planner'
     )
 
 def token_required(f):
